@@ -79,3 +79,8 @@ yarn-error.log
 
 # Written by npm run db:log. Contains real SMS from the phone.
 db.log
+
+# A GitHub token with write access to this very repo. Never committed.
+local.env
+*.env
+.env
