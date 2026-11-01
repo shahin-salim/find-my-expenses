@@ -1,0 +1,14 @@
+<!--
+  The shape behind a category pill. Drawn white and tinted from code, the
+  way notif_chip_oval was, because a RemoteViews cannot tint a background
+  drawable on every version the app supports.
+
+  A GradientDrawable paints to whatever bounds it is given rather than being
+  scaled like a bitmap, so one shape serves pills of every width without the
+  corners distorting.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+  <corners android:radius="100dp" />
+  <solid android:color="#FFFFFF" />
+</shape>

@@ -1,0 +1,99 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Section 7, Required Permissions.
+
+         SMS access reads historical messages from the past year and new ones
+         as they arrive. Nothing is sent anywhere: the app has no INTERNET
+         permission, which is what makes "your data stays on your phone" an
+         enforced property rather than a claim on a screen. -->
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+
+    <!-- Location is attached to a transaction when a new message arrives. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Section 6.1, and asked for separately and only if the user wants it.
+
+         Almost every payment is made with the app closed, which is when the
+         two permissions above stop applying. The intended way round that was
+         a foreground service of the location type, covered by the ordinary
+         "while using the app" grant; Android refuses location to any
+         foreground service an app started while in the background, so there
+         is no way round it. Without this the payment is still read and
+         recorded in the background, just without a place. -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
+    <!-- Alerts when spending runs above usual. Optional on the welcome screen. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Processing an incoming message and taking a location fix outlives the
+         broadcast itself, so the work runs in a short foreground service.
+
+         FOREGROUND_SERVICE_LOCATION is required of any service that reads
+         a fix. The service only claims that type when the user has granted
+         background location as well; claiming it without is a
+         SecurityException thrown inside the service, and the service is
+         where the payment gets recorded. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Holds the phone awake between the broadcast arriving and the service
+         being up. Without it the wake lock React Native takes is refused,
+         and the refusal is a SecurityException thrown inside a broadcast
+         receiver, which ends the process. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
+    <application
+      android:name=".MainApplication"
+      android:label="@string/app_name"
+      android:icon="@mipmap/ic_launcher"
+      android:roundIcon="@mipmap/ic_launcher_round"
+      android:allowBackup="false"
+      android:theme="@style/AppTheme"
+      android:usesCleartextTraffic="${usesCleartextTraffic}"
+      android:supportsRtl="true">
+      <activity
+        android:name=".MainActivity"
+        android:label="@string/app_name"
+        android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+        android:launchMode="singleTask"
+        android:windowSoftInputMode="adjustResize"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+      </activity>
+
+      <!-- Section 1.2. Tells the app a message arrived; the app then reads
+           forward from its watermark. Ordered high so the signal arrives
+           promptly, but nothing depends on winning that race: a missed
+           broadcast costs a delay, not a payment. -->
+      <receiver
+        android:name=".sms.SmsReceiver"
+        android:permission="android.permission.BROADCAST_SMS"
+        android:exported="true">
+        <intent-filter android:priority="999">
+            <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+        </intent-filter>
+      </receiver>
+
+      <!-- Section 6.1, background processing. Started by the receiver above
+           when there is no app on screen to do the reading, and stopped as
+           soon as it has read. The two types are what it actually does:
+           write to the database, and take one location fix. -->
+      <service
+        android:name=".sms.SmsIngestService"
+        android:exported="false"
+        android:foregroundServiceType="location|dataSync" />
+
+      <!-- Runs for about a second when a category button on a "needs a
+           category" notification is tapped: it starts the bundle headless
+           so the ordinary DAO can do the write, then stops. dataSync only,
+           because unlike the ingest service it never asks for a fix. -->
+      <service
+        android:name=".notify.CategoryActionService"
+        android:exported="false"
+        android:foregroundServiceType="dataSync" />
+    </application>
+</manifest>

@@ -1,0 +1,18 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Debug builds only.
+
+         The release manifest declares no network permission at all, which is
+         what turns "Your data stays on your phone" from a claim on the
+         welcome screen into something the OS enforces: the app cannot open a
+         socket even if a future dependency tries to.
+
+         Metro serves the JS bundle over HTTP during development, so the dev
+         build needs these two. They are in this source set and not the main
+         one, so they never reach a release APK. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 16 gates localhost and LAN access behind its own permission,
+         which is what the dev server is reached through. -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+
+</manifest>
